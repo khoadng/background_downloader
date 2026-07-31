@@ -391,10 +391,12 @@ abstract base class NativeDownloader extends BaseDownloader {
   Future<bool> requireWiFi(
     RequireWiFi requirement,
     rescheduleRunningTasks,
+    alsoRestartUploads,
   ) async {
     return await methodChannel.invokeMethod('requireWiFi', [
           requirement.index,
           rescheduleRunningTasks,
+          alsoRestartUploads,
         ]) ??
         false;
   }

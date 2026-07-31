@@ -796,13 +796,21 @@ interface class FileDownloader {
   /// Set WiFi requirement globally, based on [requirement].
   ///
   /// Affects future tasks and reschedules enqueued, inactive tasks
-  /// with the new setting.
-  /// Reschedules running tasks if [rescheduleRunningTasks] is true,
-  /// otherwise leaves those running with their prior setting
+  /// (both downloads and uploads) with the new setting.
+  /// Reschedules running download tasks if [rescheduleRunningTasks] is true,
+  /// otherwise leaves those running with their prior setting.
+  /// Restarts running upload tasks if [alsoRestartUploads] is true (which
+  /// requires [rescheduleRunningTasks] to be true as well).
   Future<bool> requireWiFi(
     RequireWiFi requirement, {
     final rescheduleRunningTasks = true,
-  }) => _downloader.requireWiFi(requirement, rescheduleRunningTasks);
+    final alsoRestartUploads = false,
+  }) {
+    assert(!(alsoRestartUploads && !rescheduleRunningTasks),
+        'alsoRestartUploads can only be set if rescheduleRunningTasks is true');
+    return _downloader.requireWiFi(
+        requirement, rescheduleRunningTasks, alsoRestartUploads);
+  }
 
   /// Returns the current global setting for requiring WiFi
   Future<RequireWiFi> getRequireWiFiSetting() =>

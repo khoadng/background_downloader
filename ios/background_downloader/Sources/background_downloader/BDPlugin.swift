@@ -793,7 +793,8 @@ public class BDPlugin: NSObject, FlutterPlugin, UNUserNotificationCenterDelegate
             return
         }
         let rescheduleRunning = args[1] as? Bool ?? false
-        WiFiQueue.shared.requireWiFiChange(requireWiFi: newRequireWiFi, rescheduleRunningTasks: rescheduleRunning)
+        let alsoRestartUploads = args.count > 2 ? args[2] as? Bool ?? false : false
+        WiFiQueue.shared.requireWiFiChange(requireWiFi: newRequireWiFi, rescheduleRunningTasks: rescheduleRunning, alsoRestartUploads: alsoRestartUploads)
         result(true)
     }
     

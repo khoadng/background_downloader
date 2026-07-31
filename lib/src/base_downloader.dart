@@ -674,10 +674,13 @@ abstract base class BaseDownloader {
   /// Set WiFi requirement globally, based on [requirement].
   ///
   /// Affects future tasks and reschedules enqueued, inactive tasks
-  /// with the new setting.
-  /// Reschedules running tasks if [rescheduleRunningTasks] is true,
-  /// otherwise leaves those running with their prior setting
-  Future<bool> requireWiFi(RequireWiFi requirement, rescheduleRunningTasks) =>
+  /// (both downloads and uploads) with the new setting.
+  /// Reschedules running download tasks if [rescheduleRunningTasks] is true,
+  /// otherwise leaves those running with their prior setting.
+  /// Restarts running upload tasks if [alsoRestartUploads] is true (which
+  /// requires [rescheduleRunningTasks] to be true as well).
+  Future<bool> requireWiFi(RequireWiFi requirement, rescheduleRunningTasks,
+          alsoRestartUploads) =>
       Future.value(true);
 
   /// Returns the current global setting for requiring WiFi

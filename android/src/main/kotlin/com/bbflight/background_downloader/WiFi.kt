@@ -73,7 +73,8 @@ object WiFi {
 class RequireWiFiChange(
     private val applicationContext: Context,
     private val requireWifi: RequireWiFi,
-    private val rescheduleRunningTasks: Boolean
+    private val rescheduleRunningTasks: Boolean,
+    private val alsoRestartUploads: Boolean
 ) {
     /**
      * Execute the change in WiFi requirement and return
@@ -96,7 +97,7 @@ class RequireWiFiChange(
             if (tags.isNotEmpty()) {
                 val taskId = tags.first().substring(7)
                 val task = tasksMap[taskId]
-                if (task != null && task.isDownloadTask()) {
+                if (task != null && (task.isDownloadTask() || task.isUploadTask())) {
                     if (BDPlugin.taskRequiresWifi(task) != BDPlugin.taskIdsRequiringWiFi.contains(
                             task.taskId
                         )
@@ -120,10 +121,21 @@ class RequireWiFiChange(
                             }
 
                             WorkInfo.State.RUNNING -> {
-                                if (rescheduleRunningTasks) {
+                                if (rescheduleRunningTasks && task.isDownloadTask()) {
                                     haveReEnqueued = true
                                     BDPlugin.tasksToReEnqueue.add(task)
                                     BDPlugin.pauseTaskWithId(task.taskId)
+                                } else if (alsoRestartUploads && task.isUploadTask()) {
+                                    haveReEnqueued = true
+                                    BDPlugin.tasksToReEnqueue.add(task)
+                                    if (!BDPlugin.cancelActiveTaskWithId(
+                                            applicationContext,
+                                            task.taskId,
+                                            workManager
+                                        )
+                                    ) {
+                                        BDPlugin.tasksToReEnqueue.remove(task)
+                                    }
                                 }
                             }
 

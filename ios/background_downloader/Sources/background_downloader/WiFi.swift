@@ -27,7 +27,7 @@ class WiFiQueue {
     private init() {}
     
     // Change the application level WiFi requirement and re-enqueue tasks as necessary
-    func requireWiFiChange(requireWiFi: RequireWiFi, rescheduleRunningTasks: Bool) {
+    func requireWiFiChange(requireWiFi: RequireWiFi, rescheduleRunningTasks: Bool, alsoRestartUploads: Bool) {
         requireWiFiChangeQueue.async {
             _Concurrency.Task {
                 BDPlugin.requireWiFi = requireWiFi
@@ -41,7 +41,7 @@ class WiFiQueue {
                 }
                 var haveReEnqueued = false
                 urlSessionTasks.forEach { urlSessionTask in
-                    if (urlSessionTask is URLSessionDownloadTask && (urlSessionTask.state == .running || urlSessionTask.state == .suspended)) {
+                    if ((urlSessionTask is URLSessionDownloadTask || urlSessionTask is URLSessionUploadTask) && (urlSessionTask.state == .running || urlSessionTask.state == .suspended)) {
                         guard let task = getTaskFrom(urlSessionTask: urlSessionTask) else {
                             return
                         }
@@ -59,13 +59,17 @@ class WiFiQueue {
                                     BDPlugin.tasksToReEnqueue.insert(task)
                                     urlSessionTask.cancel()
                                 } else {
-                                    if rescheduleRunningTasks {
+                                    if rescheduleRunningTasks && isDownloadTask(task: task) {
                                         // already running, so pause instead of cancel
                                         haveReEnqueued = true
                                         BDPlugin.tasksToReEnqueue.insert(task)
                                         _Concurrency.Task{
                                             await (urlSessionTask as! URLSessionDownloadTask).cancelByProducingResumeData()
                                         }
+                                    } else if alsoRestartUploads && isUploadTask(task: task) {
+                                        haveReEnqueued = true
+                                        BDPlugin.tasksToReEnqueue.insert(task)
+                                        urlSessionTask.cancel()
                                     }
                                 }
                             }
