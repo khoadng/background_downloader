@@ -111,7 +111,7 @@ By default, whether a task requires WiFi or not is determined by its `requireWiF
 * `forAllTasks` requires WiFi for all tasks
 * `forNoTasks` does not require WiFi for any tasks
 
-When calling `FileDownloader().requireWifi`, all enqueued tasks will be canceled and rescheduled with the appropriate WiFi requirement setting, and if the `rescheduleRunningTasks` parameter is true, all running tasks will be paused (if possible, independent of the task's `allowPause` property) or canceled and resumed/restarted with the new WiFi requirement. All newly enqueued tasks will follow this setting as well.
+When calling `FileDownloader().requireWiFi`, all enqueued tasks will be canceled and rescheduled with the appropriate WiFi requirement setting. If the `rescheduleRunningTasks` parameter is true, all running download tasks will be paused (if possible, independent of the task's `allowPause` property) and resumed with the new WiFi requirement. If the `alsoRestartUploads` parameter is true (which requires `rescheduleRunningTasks` to also be true), running upload tasks will be forcefully canceled and restarted from scratch. All newly enqueued tasks will follow this setting as well.
 
 The global setting persists across application restarts. Check the current setting by calling `FileDownloader().getRequireWiFiSetting`.
 
