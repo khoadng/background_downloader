@@ -604,6 +604,9 @@ final class Config {
   /// Config string for proxy
   static const proxy = 'proxy';
 
+  /// Android-only: use Cronet for download task connections
+  static const useCronet = 'useCronet';
+
   /// Config string for bypass TLS certificate validation
   static const bypassTLSCertificateValidation =
       'bypassTLSCertificateValidation';

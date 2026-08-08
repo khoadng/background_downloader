@@ -668,6 +668,12 @@ final class AndroidDownloader extends NativeDownloader {
       return superResult;
     }
     switch (configItem) {
+      case (Config.useCronet, final bool enabled):
+        await NativeDownloader.methodChannel.invokeMethod(
+          'configUseCronet',
+          enabled,
+        );
+
       case (Config.runInForeground, final bool activate):
         await NativeDownloader.methodChannel.invokeMethod(
           'configForegroundFileSize',

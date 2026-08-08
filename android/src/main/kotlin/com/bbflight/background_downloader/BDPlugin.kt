@@ -93,6 +93,8 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         const val keyConfigProxyPort = "com.bbflight.background_downloader.config.proxyPort"
         const val keyConfigRequestTimeout =
             "com.bbflight.background_downloader.config.requestTimeout"
+        const val keyConfigUseCronet =
+            "com.bbflight.background_downloader.config.useCronet"
         const val keyConfigCheckAvailableSpace =
             "com.bbflight.background_downloader.config.checkAvailableSpace"
         const val keyConfigUseCacheDir = "com.bbflight.background_downloader.config.useCacheDir"
@@ -673,6 +675,7 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
                     "configProxyAddress" -> methodConfigProxyAddress(call)
                     "configProxyPort" -> methodConfigProxyPort(call)
                     "configRequestTimeout" -> methodConfigRequestTimeout(call)
+                    "configUseCronet" -> methodConfigUseCronet(call)
                     "configBypassTLSCertificateValidation" -> methodConfigBypassTLSCertificateValidation()
                     "configCheckAvailableSpace" -> methodConfigCheckAvailableSpace(call)
                     "configUseCacheDir" -> methodConfigUseCacheDir(call)
@@ -1445,6 +1448,18 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     private suspend fun methodConfigRequestTimeout(call: MethodCall): Any? {
         withContext(defaultScope.coroutineContext) {
             updateSharedPreferences(keyConfigRequestTimeout, call.arguments as Int?)
+        }
+        return null
+    }
+
+    /**
+     * Store whether download tasks should use Cronet connections
+     */
+    private suspend fun methodConfigUseCronet(call: MethodCall): Any? {
+        withContext(defaultScope.coroutineContext) {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
+                putBoolean(keyConfigUseCronet, call.arguments as Boolean)
+            }
         }
         return null
     }

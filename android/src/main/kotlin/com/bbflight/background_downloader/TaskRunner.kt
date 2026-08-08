@@ -31,6 +31,7 @@ import java.net.Proxy
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.URL
+import org.chromium.net.CronetEngine
 import java.net.URLDecoder
 import java.net.MalformedURLException
 import kotlin.concurrent.read
@@ -100,6 +101,21 @@ interface TaskJobContext {
 open class TaskRunner(
     val context: TaskJobContext
 ) {
+    private object CronetConnectionFactory {
+        @Volatile
+        private var engine: CronetEngine? = null
+
+        fun open(context: Context, url: URL): HttpURLConnection {
+            val cronetEngine = engine ?: synchronized(this) {
+                engine ?: CronetEngine.Builder(context.applicationContext)
+                    .enableHttp2(true)
+                    .enableQuic(true)
+                    .build()
+                    .also { engine = it }
+            }
+            return cronetEngine.openConnection(url) as HttpURLConnection
+        }
+    }
 
     companion object {
         const val TAG = "TaskRunner"
@@ -592,9 +608,15 @@ open class TaskRunner(
                 )
                 BDPlugin.haveLoggedProxyMessage = true
             }
+            val useCronet = prefs.getBoolean(BDPlugin.keyConfigUseCronet, false) &&
+                    proxy == null && !task.isUploadTask()
             with(withContext(Dispatchers.IO) {
-                url.openConnection(proxy ?: Proxy.NO_PROXY)
-            } as HttpURLConnection) {
+                if (useCronet) {
+                    CronetConnectionFactory.open(context.appContext, url)
+                } else {
+                    url.openConnection(proxy ?: Proxy.NO_PROXY) as HttpURLConnection
+                }
+            }) {
                 activeConnection = this
                 try {
                     requestMethod = task.httpRequestMethod
