@@ -1258,6 +1258,18 @@ interface class FileDownloader {
     return this;
   }
 
+  /// Removes the notification configuration for [group].
+  ///
+  /// Tasks enqueued after this call will not inherit a notification
+  /// configuration from the group. Task-specific and default configurations
+  /// remain unchanged.
+  FileDownloader removeNotificationForGroup(String group) {
+    _downloader.notificationConfigs.removeWhere(
+      (config) => config.taskOrGroup == group,
+    );
+    return this;
+  }
+
   /// Configure default task notification
   ///
   /// The configuration determines what notifications are shown,
