@@ -8,4 +8,11 @@
     <!--  For Android below Q  -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <application>
+        <service
+            android:name="com.bbflight.background_downloader_example.QueueProbeService"
+            android:exported="true"
+            android:foregroundServiceType="dataSync" />
+    </application>
 </manifest>

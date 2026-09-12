@@ -10,6 +10,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancelAndJoin
@@ -31,6 +33,7 @@ import java.net.Proxy
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.URL
+import java.util.concurrent.Executors
 import org.chromium.net.CronetEngine
 import java.net.URLDecoder
 import java.net.MalformedURLException
@@ -456,6 +459,10 @@ open class TaskRunner(
     @Volatile
     var activeConnection: HttpURLConnection? = null
 
+    // Cronet's URLConnection message loop requires the same thread for headers
+    // and every body read, even when a coroutine suspends between reads.
+    private var cronetDispatcher: ExecutorCoroutineDispatcher? = null
+
     // additional parameters for final TaskStatusUpdate
     var taskException: TaskException? = null
     var responseBody: String? = null
@@ -610,31 +617,41 @@ open class TaskRunner(
             }
             val useCronet = prefs.getBoolean(BDPlugin.keyConfigUseCronet, false) &&
                     proxy == null && !task.isUploadTask()
-            with(withContext(Dispatchers.IO) {
-                if (useCronet) {
+            if (useCronet) {
+                cronetDispatcher = Executors.newSingleThreadExecutor { runnable ->
+                    Thread(runnable, "Cronet-${task.taskId}")
+                }.asCoroutineDispatcher()
+            }
+            return withContext(cronetDispatcher ?: Dispatchers.IO) {
+                val connection = if (useCronet) {
                     CronetConnectionFactory.open(context.appContext, url)
                 } else {
                     url.openConnection(proxy ?: Proxy.NO_PROXY) as HttpURLConnection
                 }
-            }) {
-                activeConnection = this
-                try {
-                    requestMethod = task.httpRequestMethod
-                    connectTimeout = requestTimeoutSeconds * 1000
-                    readTimeout = requestTimeoutSeconds * 1000
-                    for (header in task.headers) {
-                        // For UploadTask, copy headers unless it's "Range" or "Content-Disposition".
-                        // For other task types, copy all headers.
-                        if (!task.isUploadTask() ||
-                            (!header.key.equals("Range", ignoreCase = true) &&
-                                    !header.key.equals("Content-Disposition", ignoreCase = true))
-                        ) {
-                            setRequestProperty(header.key, header.value)
+                with(connection) {
+                    activeConnection = this
+                    try {
+                        requestMethod = task.httpRequestMethod
+                        connectTimeout = requestTimeoutSeconds * 1000
+                        readTimeout = requestTimeoutSeconds * 1000
+                        for (header in task.headers) {
+                            // For UploadTask, copy headers unless it's "Range" or "Content-Disposition".
+                            // For other task types, copy all headers.
+                            if (!task.isUploadTask() ||
+                                (!header.key.equals("Range", ignoreCase = true) &&
+                                        !header.key.equals("Content-Disposition", ignoreCase = true))
+                            ) {
+                                setRequestProperty(header.key, header.value)
+                            }
+                        }
+                        connectAndProcess(this)
+                    } finally {
+                        try {
+                            disconnect()
+                        } finally {
+                            activeConnection = null
                         }
                     }
-                    return connectAndProcess(this)
-                } finally {
-                    activeConnection = null
                 }
             }
         } catch (e: Exception) {
@@ -642,6 +659,9 @@ open class TaskRunner(
                 TAG, "Error for taskId ${task.taskId}: $e\n${e.stackTraceToString()}"
             )
             setTaskException(e)
+        } finally {
+            cronetDispatcher?.close()
+            cronetDispatcher = null
         }
         return TaskStatus.failed
     }
@@ -757,7 +777,7 @@ open class TaskRunner(
             var testerJob: Job? = null
             val doneCompleter = CompletableDeferred<TaskStatus>()
             try {
-                readerJob = launch(Dispatchers.IO) {
+                readerJob = launch(cronetDispatcher ?: Dispatchers.IO) {
                     try {
                         while (inputStream.read(
                                 dataBuffer, 0,
@@ -825,7 +845,7 @@ open class TaskRunner(
                 }
                 return@withContext doneCompleter.await()
             } catch (e: Exception) {
-                Log.i(TAG, "Exception for taskId ${task.taskId}: $e")
+                Log.i(TAG, "Exception for taskId ${task.taskId}", e)
                 setTaskException(e)
                 return@withContext TaskStatus.failed
             } finally {
