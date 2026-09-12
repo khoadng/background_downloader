@@ -50,9 +50,9 @@ final class DesktopDownloader extends BaseDownloader {
   static int _skipExistingFiles = -1;
   static String? tempFilePath;
 
-  factory() => _singleton;
+  factory DesktopDownloader() => _singleton;
 
-  new _internal();
+  DesktopDownloader._internal();
 
   @override
   Future<bool> enqueue(Task task) async {

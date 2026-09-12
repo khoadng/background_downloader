@@ -139,10 +139,11 @@ typedef TaskNotificationTapCallback = void Function(
 typedef BatchProgressCallback = void Function(int succeeded, int failed);
 
 /// Contains tasks and results related to a batch of tasks
-class Batch(
-  final List<Task> tasks,
-  final BatchProgressCallback? batchProgressCallback,
-) {
+class Batch {
+  Batch(this.tasks, this.batchProgressCallback);
+
+  final List<Task> tasks;
+  final BatchProgressCallback? batchProgressCallback;
   final results = <Task, TaskStatus>{};
 
   /// Returns an Iterable with successful tasks in this batch
@@ -460,7 +461,12 @@ enum NotificationType {
 ///
 /// Actual appearance of notification is dependent on the platform, e.g.
 /// on iOS {progress} is not available and ignored
-final class const TaskNotification(final String title, final String body) {
+final class TaskNotification {
+  const TaskNotification(this.title, this.body);
+
+  final String title;
+  final String body;
+
   /// Return JSON Map representing object
   Map<String, dynamic> toJson() => {"title": title, "body": body};
 }

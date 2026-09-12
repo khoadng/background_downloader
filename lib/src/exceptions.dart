@@ -16,7 +16,11 @@ const _exceptions = {
 /// exception message, or from the plugin. The localization is undefined
 /// For the [TaskHttpException], the [httpResponseCode] is only valid if >0
 /// and may offer details about the nature of the error
-base class TaskException(final String description) implements Exception {
+base class TaskException implements Exception {
+  TaskException(this.description);
+
+  final String description;
+
   String get exceptionType => 'TaskException';
 
   /// Create object from [json]
@@ -61,35 +65,46 @@ base class TaskException(final String description) implements Exception {
 
 /// Exception related to the filesystem, e.g. insufficient space
 /// or file not found
-final class TaskFileSystemException(super.description) extends TaskException {
+final class TaskFileSystemException extends TaskException {
+  TaskFileSystemException(super.description);
+
   @override
   String get exceptionType => 'TaskFileSystemException';
 }
 
 /// Exception related to the url, eg malformed
-final class TaskUrlException(super.description) extends TaskException {
+final class TaskUrlException extends TaskException {
+  TaskUrlException(super.description);
+
   @override
   String get exceptionType => 'TaskUrlException';
 }
 
 /// Exception related to the connection, e.g. socket exception
 /// or request timeout
-final class TaskConnectionException(super.description) extends TaskException {
+final class TaskConnectionException extends TaskException {
+  TaskConnectionException(super.description);
+
   @override
   String get exceptionType => 'TaskConnectionException';
 }
 
 /// Exception related to an attempt to resume a task, e.g.
 /// the temp filename no longer exists, or eTag has changed
-final class TaskResumeException(super.description) extends TaskException {
+final class TaskResumeException extends TaskException {
+  TaskResumeException(super.description);
+
   @override
   String get exceptionType => 'TaskResumeException';
 }
 
 /// Exception related to the HTTP response, e.g. a 403
 /// response code
-final class TaskHttpException(super.description, final int httpResponseCode)
-    extends TaskException {
+final class TaskHttpException extends TaskException {
+  TaskHttpException(super.description, this.httpResponseCode);
+
+  final int httpResponseCode;
+
   @override
   String get exceptionType => 'TaskHttpException';
 

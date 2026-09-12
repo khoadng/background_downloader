@@ -5,8 +5,8 @@ version: 9.6.1
 repository: https://github.com/781flyingdutchman/background_downloader
 
 environment:
-  sdk: ^3.13.0
-  flutter:  '>=3.47.0'
+  sdk: ^3.12.2
+  flutter: '>=3.44.0'
 
 dependencies:
   flutter:
