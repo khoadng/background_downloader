@@ -12,6 +12,7 @@ import 'package:http/io_client.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:win_http/win_http.dart';
 
 import '../base_downloader.dart';
 import '../chunk.dart';
@@ -789,6 +790,27 @@ final class DesktopDownloader extends BaseDownloader {
   }
 
   static http.Client _createRawClient(MTLSConfig? mtlsConfig) {
+    if (Platform.isWindows &&
+        mtlsConfig == null &&
+        !bypassTLSCertificateValidation) {
+      final proxyAddress = _proxy['address']?.toString();
+      final proxyPort = _proxy['port']?.toString();
+      final hasProxy =
+          proxyAddress?.isNotEmpty == true && proxyPort?.isNotEmpty == true;
+      return WinHttpClient.fromConfiguration(
+        WinHttpClientConfiguration(
+          accessType: hasProxy
+              ? WinHttpAccessType.named
+              : WinHttpAccessType.automatic,
+          proxy: hasProxy ? '$proxyAddress:$proxyPort' : null,
+          connectTimeout: requestTimeout,
+          sendTimeout: requestTimeout,
+          receiveTimeout: requestTimeout,
+          maxConnectionsPerServer: 32,
+        ),
+      );
+    }
+
     SecurityContext? securityContext;
     if (mtlsConfig != null && mtlsConfig.hasCredentials) {
       _log.finest(
