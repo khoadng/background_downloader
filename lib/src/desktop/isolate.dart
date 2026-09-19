@@ -135,7 +135,7 @@ Future<void> doTask((RootIsolateToken, SendPort) isolateArguments) async {
       _ => throw UnimplementedError(),
     };
   }
-  DesktopDownloader.httpClient.close();
+  await DesktopDownloader.closeHttpClients();
   receivePort.close();
   sendPort.send('done'); // signals end
   Isolate.exit();

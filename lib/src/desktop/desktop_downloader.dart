@@ -784,6 +784,28 @@ final class DesktopDownloader extends BaseDownloader {
   /// Default HTTP client getter for backward compatibility
   static http.Client get httpClient => httpClientForHost(null);
 
+  /// Closes this isolate's clients and lets native callbacks finish before
+  /// the isolate exits.
+  static Future<void> closeHttpClients() async {
+    final clients = <http.Client>{
+      ..._clientsCache.values,
+      ?_defaultClient,
+    };
+    final needsWinHttpCallbackDrain = clients.any((e) => e is WinHttpClient);
+    for (final client in clients) {
+      client.close();
+    }
+    _clientsCache.clear();
+    _defaultClient = null;
+
+    if (needsWinHttpCallbackDrain) {
+      // WinHttpClient closes its NativeCallable two seconds after closing the
+      // WinHTTP session. Exiting this task isolate sooner deletes the callback
+      // while WinHTTP can still invoke it, which terminates the Dart VM.
+      await Future<void>.delayed(const Duration(milliseconds: 2100));
+    }
+  }
+
   /// Sets the default HTTP client (primarily for testing)
   static set httpClient(http.Client client) {
     _defaultClient = client;
