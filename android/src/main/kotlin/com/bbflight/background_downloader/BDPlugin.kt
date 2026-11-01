@@ -346,10 +346,17 @@ class BDPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             return (requireWifi == RequireWiFi.forAllTasks || (requireWifi == RequireWiFi.asSetByTask && task.requiresWiFi))
         }
 
-        /** Create a NetworkRequest requiring Wi-Fi and internet capability */
+        /**
+         * Create a NetworkRequest requiring Wi-Fi and internet capability
+         *
+         * A VPN carries the transports of the network beneath it, so a VPN
+         * running over Wi-Fi still satisfies the request. Requests exclude
+         * VPNs by default, which would leave tasks waiting forever.
+         */
         private fun wifiNetworkRequest(): NetworkRequest =
             NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                 .build()
 
